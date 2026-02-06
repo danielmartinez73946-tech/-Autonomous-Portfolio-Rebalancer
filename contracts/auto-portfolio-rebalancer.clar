@@ -7,6 +7,7 @@
 (define-constant err-already-initialized (err u105))
 (define-constant err-zero-amount (err u106))
 (define-constant err-invalid-asset (err u107))
+(define-constant err-drift-not-exceeded (err u108))
 
 (define-constant blocks-per-quarter u4320)
 (define-constant precision u10000)
@@ -40,6 +41,11 @@
         btc-after: uint,
         stable-after: uint
     }
+)
+
+(define-map drift-thresholds
+    principal
+    uint
 )
 
 (define-data-var total-portfolios uint u0)
@@ -244,4 +250,75 @@
 
 (define-read-only (get-rebalance-history (user principal) (timestamp uint))
     (ok (map-get? rebalance-history { user: user, timestamp: timestamp }))
+)
+
+(define-read-only (get-drift-threshold (user principal))
+    (ok (map-get? drift-thresholds user))
+)
+
+(define-read-only (get-max-drift (user principal))
+    (match (map-get? portfolios user)
+        portfolio
+        (let
+            (
+                (total (+ (+ (get stx-balance portfolio) (get btc-balance portfolio)) (get stable-balance portfolio)))
+                (stx-current-pct (if (is-eq total u0) u0 (/ (* (get stx-balance portfolio) precision) total)))
+                (btc-current-pct (if (is-eq total u0) u0 (/ (* (get btc-balance portfolio) precision) total)))
+                (stable-current-pct (if (is-eq total u0) u0 (/ (* (get stable-balance portfolio) precision) total)))
+                (stx-target-pct (/ (* (get stx-target portfolio) precision) max-allocation))
+                (btc-target-pct (/ (* (get btc-target portfolio) precision) max-allocation))
+                (stable-target-pct (/ (* (get stable-target portfolio) precision) max-allocation))
+                (stx-drift (if (> stx-current-pct stx-target-pct) (- stx-current-pct stx-target-pct) (- stx-target-pct stx-current-pct)))
+                (btc-drift (if (> btc-current-pct btc-target-pct) (- btc-current-pct btc-target-pct) (- btc-target-pct btc-current-pct)))
+                (stable-drift (if (> stable-current-pct stable-target-pct) (- stable-current-pct stable-target-pct) (- stable-target-pct stable-current-pct)))
+                (max-drift-val (if (> stx-drift btc-drift) (if (> stx-drift stable-drift) stx-drift stable-drift) (if (> btc-drift stable-drift) btc-drift stable-drift)))
+            )
+            (ok max-drift-val)
+        )
+        (err err-no-portfolio)
+    )
+)
+
+(define-public (set-drift-threshold (threshold uint))
+    (let
+        (
+            (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
+        )
+        (map-set drift-thresholds tx-sender threshold)
+        (ok true)
+    )
+)
+
+(define-public (execute-volatility-rebalance)
+    (let
+        (
+            (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
+            (threshold (unwrap! (map-get? drift-thresholds tx-sender) err-drift-not-exceeded))
+            (max-drift (unwrap! (get-max-drift tx-sender) err-no-portfolio))
+            (total (+ (+ (get stx-balance portfolio) (get btc-balance portfolio)) (get stable-balance portfolio)))
+            (target-stx (/ (* total (get stx-target portfolio)) max-allocation))
+            (target-btc (/ (* total (get btc-target portfolio)) max-allocation))
+            (target-stable (/ (* total (get stable-target portfolio)) max-allocation))
+        )
+        (asserts! (>= max-drift threshold) err-drift-not-exceeded)
+        (map-set rebalance-history 
+            { user: tx-sender, timestamp: stacks-block-height }
+            {
+                stx-before: (get stx-balance portfolio),
+                btc-before: (get btc-balance portfolio),
+                stable-before: (get stable-balance portfolio),
+                stx-after: target-stx,
+                btc-after: target-btc,
+                stable-after: target-stable
+            }
+        )
+        (map-set portfolios tx-sender (merge portfolio {
+            stx-balance: target-stx,
+            btc-balance: target-btc,
+            stable-balance: target-stable,
+            last-rebalance: stacks-block-height
+        }))
+        (var-set rebalance-count (+ (var-get rebalance-count) u1))
+        (ok true)
+    )
 )

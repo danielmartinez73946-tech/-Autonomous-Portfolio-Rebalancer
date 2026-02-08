@@ -9,6 +9,7 @@ requirements = []
 path = 'contracts/auto-portfolio-rebalancer.clar'
 clarity_version = 3
 epoch = 'latest'
+
 [repl.analysis]
 passes = ['check_checker']
 

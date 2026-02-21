@@ -5,6 +5,12 @@ authors = []
 telemetry = true
 cache_dir = '.\.cache'
 requirements = []
+
+[contracts.keeper-registry]
+path = 'contracts/keeper-registry.clar'
+clarity_version = 3
+epoch = 'latest'
+
 [contracts.auto-portfolio-rebalancer]
 path = 'contracts/auto-portfolio-rebalancer.clar'
 clarity_version = 3

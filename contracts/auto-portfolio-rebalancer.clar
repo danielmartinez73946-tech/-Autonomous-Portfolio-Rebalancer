@@ -8,6 +8,7 @@
 (define-constant err-zero-amount (err u106))
 (define-constant err-invalid-asset (err u107))
 (define-constant err-drift-not-exceeded (err u108))
+(define-constant err-fee-deduction (err u112))
 
 (define-constant blocks-per-quarter u4320)
 (define-constant precision u10000)
@@ -213,13 +214,19 @@
     (let
         (
             (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
-            (total (+ (+ (get stx-balance portfolio) (get btc-balance portfolio)) (get stable-balance portfolio)))
+            (gross-total (+ (+ (get stx-balance portfolio) (get btc-balance portfolio)) (get stable-balance portfolio)))
+            (fee-amount (unwrap! (contract-call? .rebalance-fee-engine calculate-fee gross-total) err-fee-deduction))
+            (total (- gross-total fee-amount))
             (target-stx (/ (* total (get stx-target portfolio)) max-allocation))
             (target-btc (/ (* total (get btc-target portfolio)) max-allocation))
             (target-stable (/ (* total (get stable-target portfolio)) max-allocation))
         )
         (asserts! (>= (- stacks-block-height (get last-rebalance portfolio)) blocks-per-quarter) err-not-rebalance-time)
-        (map-set rebalance-history 
+        (if (> fee-amount u0)
+            (unwrap! (contract-call? .rebalance-fee-engine record-fee tx-sender fee-amount) err-fee-deduction)
+            true
+        )
+        (map-set rebalance-history
             { user: tx-sender, timestamp: stacks-block-height }
             {
                 stx-before: (get stx-balance portfolio),
@@ -295,13 +302,19 @@
             (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
             (threshold (unwrap! (map-get? drift-thresholds tx-sender) err-drift-not-exceeded))
             (max-drift (unwrap! (get-max-drift tx-sender) err-no-portfolio))
-            (total (+ (+ (get stx-balance portfolio) (get btc-balance portfolio)) (get stable-balance portfolio)))
+            (gross-total (+ (+ (get stx-balance portfolio) (get btc-balance portfolio)) (get stable-balance portfolio)))
+            (fee-amount (unwrap! (contract-call? .rebalance-fee-engine calculate-fee gross-total) err-fee-deduction))
+            (total (- gross-total fee-amount))
             (target-stx (/ (* total (get stx-target portfolio)) max-allocation))
             (target-btc (/ (* total (get btc-target portfolio)) max-allocation))
             (target-stable (/ (* total (get stable-target portfolio)) max-allocation))
         )
         (asserts! (>= max-drift threshold) err-drift-not-exceeded)
-        (map-set rebalance-history 
+        (if (> fee-amount u0)
+            (unwrap! (contract-call? .rebalance-fee-engine record-fee tx-sender fee-amount) err-fee-deduction)
+            true
+        )
+        (map-set rebalance-history
             { user: tx-sender, timestamp: stacks-block-height }
             {
                 stx-before: (get stx-balance portfolio),

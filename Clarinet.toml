@@ -29,6 +29,9 @@ clarity_version = 3
 epoch = 'latest'
 
 
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
 [repl.analysis]
 passes = ['check_checker']

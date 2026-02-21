@@ -16,6 +16,20 @@ path = 'contracts/auto-portfolio-rebalancer.clar'
 clarity_version = 3
 epoch = 'latest'
 
+<<<<<<< Updated upstream
+=======
+[contracts.strategy-registry]
+path = 'contracts/strategy-registry.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.performance-tracker]
+path = 'contracts/performance-tracker.clar'
+clarity_version = 3
+epoch = 'latest'
+
+
+>>>>>>> Stashed changes
 [repl.analysis]
 passes = ['check_checker']
 

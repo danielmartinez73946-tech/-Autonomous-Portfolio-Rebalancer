@@ -26,6 +26,17 @@ path = 'contracts/strategy-registry.clar'
 clarity_version = 3
 epoch = 'latest'
 
+[contracts.performance-tracker]
+path = 'contracts/performance-tracker.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.deposit-limits]
+path = 'contracts/deposit-limits.clar'
+clarity_version = 3
+epoch = 'latest'
+
+
 [repl.analysis]
 passes = ['check_checker']
 

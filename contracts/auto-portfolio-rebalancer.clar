@@ -11,8 +11,11 @@
 (define-constant err-stop-loss-not-met (err u109))
 (define-constant err-no-stop-loss (err u110))
 (define-constant err-transfer-failed (err u111))
+(define-constant err-invalid-interval (err u115))
 
 (define-constant blocks-per-quarter u4320)
+(define-constant min-rebalance-interval u144)
+(define-constant max-rebalance-interval u52560)
 (define-constant precision u10000)
 (define-constant max-allocation u100)
 
@@ -55,6 +58,11 @@
 )
 
 (define-map stop-loss-thresholds
+    principal
+    uint
+)
+
+(define-map rebalance-intervals
     principal
     uint
 )
@@ -287,7 +295,7 @@
         )
         (asserts!
             (>= (- stacks-block-height (get last-rebalance portfolio))
-                blocks-per-quarter
+                (default-to blocks-per-quarter (map-get? rebalance-intervals tx-sender))
             )
             err-not-rebalance-time
         )
@@ -393,6 +401,19 @@
 (define-public (set-drift-threshold (threshold uint))
     (let ((portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio)))
         (map-set drift-thresholds tx-sender threshold)
+        (ok true)
+    )
+)
+
+(define-read-only (get-rebalance-interval (user principal))
+    (ok (default-to blocks-per-quarter (map-get? rebalance-intervals user)))
+)
+
+(define-public (set-rebalance-interval (interval uint))
+    (let ((portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio)))
+        (asserts! (>= interval min-rebalance-interval) err-invalid-interval)
+        (asserts! (<= interval max-rebalance-interval) err-invalid-interval)
+        (map-set rebalance-intervals tx-sender interval)
         (ok true)
     )
 )

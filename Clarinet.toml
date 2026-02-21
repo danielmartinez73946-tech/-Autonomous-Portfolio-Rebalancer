@@ -6,8 +6,8 @@ telemetry = true
 cache_dir = '.\.cache'
 requirements = []
 
-[contracts.keeper-registry]
-path = 'contracts/keeper-registry.clar'
+[contracts.rebalance-fee-engine]
+path = 'contracts/rebalance-fee-engine.clar'
 clarity_version = 3
 epoch = 'latest'
 

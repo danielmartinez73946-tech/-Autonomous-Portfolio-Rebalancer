@@ -16,6 +16,11 @@ path = 'contracts/keeper-registry.clar'
 clarity_version = 3
 epoch = 'latest'
 
+[contracts.emergency-pause]
+path = 'contracts/emergency-pause.clar'
+clarity_version = 3
+epoch = 'latest'
+
 [contracts.auto-portfolio-rebalancer]
 path = 'contracts/auto-portfolio-rebalancer.clar'
 clarity_version = 3

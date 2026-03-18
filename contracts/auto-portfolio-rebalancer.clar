@@ -10,8 +10,6 @@
 (define-constant err-drift-not-exceeded (err u108))
 (define-constant err-stop-loss-not-met (err u109))
 (define-constant err-no-stop-loss (err u110))
-(define-constant err-transfer-failed (err u111))
-(define-constant err-invalid-interval (err u115))
 
 (define-constant blocks-per-quarter u4320)
 (define-constant min-rebalance-interval u144)
@@ -58,11 +56,6 @@
 )
 
 (define-map stop-loss-thresholds
-    principal
-    uint
-)
-
-(define-map rebalance-intervals
     principal
     uint
 )
@@ -221,11 +214,8 @@
             err-invalid-asset
         )
         (if (is-eq asset-type asset-stx)
-            (begin
-                (unwrap! (stx-transfer? amount tx-sender (as-contract tx-sender)) err-transfer-failed)
-                (map-set portfolios tx-sender
-                    (merge portfolio { stx-balance: (+ (get stx-balance portfolio) amount) })
-                )
+            (map-set portfolios tx-sender
+                (merge portfolio { stx-balance: (+ (get stx-balance portfolio) amount) })
             )
             (if (is-eq asset-type asset-btc)
                 (map-set portfolios tx-sender
@@ -255,7 +245,6 @@
                 (asserts! (>= (get stx-balance portfolio) amount)
                     err-insufficient-balance
                 )
-                (try! (as-contract (stx-transfer? amount tx-sender contract-caller)))
                 (map-set portfolios tx-sender
                     (merge portfolio { stx-balance: (- (get stx-balance portfolio) amount) })
                 )
@@ -284,9 +273,7 @@
 )
 
 (define-public (execute-rebalance)
-    (begin
-        (try! (contract-call? .emergency-pause assert-not-paused))
-        (let (
+    (let (
             (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
             (total (+ (+ (get stx-balance portfolio) (get btc-balance portfolio))
                 (get stable-balance portfolio)
@@ -297,7 +284,7 @@
         )
         (asserts!
             (>= (- stacks-block-height (get last-rebalance portfolio))
-                (default-to blocks-per-quarter (map-get? rebalance-intervals tx-sender))
+                blocks-per-quarter
             )
             err-not-rebalance-time
         )
@@ -421,9 +408,7 @@
 )
 
 (define-public (execute-volatility-rebalance)
-    (begin
-        (try! (contract-call? .emergency-pause assert-not-paused))
-        (let (
+    (let (
             (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
             (threshold (unwrap! (map-get? drift-thresholds tx-sender) err-drift-not-exceeded))
             (max-drift (unwrap! (get-max-drift tx-sender) err-no-portfolio))
@@ -470,10 +455,19 @@
     )
 )
 
+(define-read-only (get-stop-loss-threshold (user principal))
+    (ok (map-get? stop-loss-thresholds user))
+)
+
+(define-public (set-stop-loss-level (threshold uint))
+    (let ((portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio)))
+        (map-set stop-loss-thresholds tx-sender threshold)
+        (ok true)
+    )
+)
+
 (define-public (execute-stop-loss)
-    (begin
-        (try! (contract-call? .emergency-pause assert-not-paused))
-        (let (
+    (let (
             (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
             (threshold (unwrap! (map-get? stop-loss-thresholds tx-sender) err-no-stop-loss))
             (total-val (+ (+ (get stx-balance portfolio) (get btc-balance portfolio))
@@ -496,5 +490,5 @@
         (map-delete stop-loss-thresholds tx-sender)
 
         (ok true)
-    ))
+    )
 )

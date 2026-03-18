@@ -284,7 +284,9 @@
 )
 
 (define-public (execute-rebalance)
-    (let (
+    (begin
+        (try! (contract-call? .emergency-pause assert-not-paused))
+        (let (
             (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
             (total (+ (+ (get stx-balance portfolio) (get btc-balance portfolio))
                 (get stable-balance portfolio)
@@ -320,7 +322,7 @@
         )
         (var-set rebalance-count (+ (var-get rebalance-count) u1))
         (ok true)
-    )
+    ))
 )
 
 (define-read-only (get-contract-stx-balance)
@@ -419,7 +421,9 @@
 )
 
 (define-public (execute-volatility-rebalance)
-    (let (
+    (begin
+        (try! (contract-call? .emergency-pause assert-not-paused))
+        (let (
             (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
             (threshold (unwrap! (map-get? drift-thresholds tx-sender) err-drift-not-exceeded))
             (max-drift (unwrap! (get-max-drift tx-sender) err-no-portfolio))
@@ -452,7 +456,7 @@
         )
         (var-set rebalance-count (+ (var-get rebalance-count) u1))
         (ok true)
-    )
+    ))
 )
 
 (define-read-only (get-stop-loss-threshold (user principal))
@@ -467,7 +471,9 @@
 )
 
 (define-public (execute-stop-loss)
-    (let (
+    (begin
+        (try! (contract-call? .emergency-pause assert-not-paused))
+        (let (
             (portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio))
             (threshold (unwrap! (map-get? stop-loss-thresholds tx-sender) err-no-stop-loss))
             (total-val (+ (+ (get stx-balance portfolio) (get btc-balance portfolio))
@@ -490,5 +496,5 @@
         (map-delete stop-loss-thresholds tx-sender)
 
         (ok true)
-    )
+    ))
 )

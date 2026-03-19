@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strategy Marketplace - Autonomous Portfolio Rebalancer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #020617;
+            --bg-card: rgba(15, 23, 42, 0.6);
+            --bg-nav: rgba(2, 6, 23, 0.8);
+            --primary: #8b5cf6;
+            --primary-hover: #7c3aed;
+            --accent-pink: #ec4899;
+            --accent-blue: #3b82f6;
+            --text-main: #f8fafc;
+            --text-sub: #cbd5e1;
+            --text-dim: #64748b;
+            --border: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* Ambient Orbs */
+        .orb-1 {
+            position: fixed;
+            top: -10%; left: -10%;
+            width: 50vw; height: 50vw;
+            background: radial-gradient(circle, rgba(139, 92, 246, 0.15), transparent 60%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(80px);
+        }
+        
+        .orb-2 {
+            position: fixed;
+            bottom: -20%; right: -10%;
+            width: 60vw; height: 60vw;
+            background: radial-gradient(circle, rgba(236, 72, 153, 0.1), transparent 60%);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 0;
+            filter: blur(100px);
+        }
+
+        /* Navigation */
+        nav {
+            width: 100%;
+            padding: 1.5rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-nav);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid var(--border);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .logo {
+            font-weight: 800;
+            font-size: 1.5rem;
+            letter-spacing: -0.02em;
+            background: linear-gradient(to right, #fff, var(--text-sub));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .btn-connect {
+            background: linear-gradient(135deg, var(--primary), var(--accent-pink));
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .btn-connect:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(139, 92, 246, 0.4);
+        }
+
+        /* Layout */
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            padding: 4rem 5%;
+            z-index: 10;
+        }
+
+        .hero {
+            text-align: center;
+            margin-bottom: 4rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .hero h1 {
+            font-size: 3.5rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            line-height: 1.2;
+        }
+
+        .hero p {
+            color: var(--text-sub);
+            font-size: 1.25rem;
+            max-width: 600px;
+            margin-bottom: 2rem;
+        }
+
+        .hero-actions {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .btn-outline {
+            background: transparent;
+            color: #fff;
+            border: 1px solid var(--border);
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            backdrop-filter: blur(10px);
+        }
+
+        .btn-outline:hover {
+            background: rgba(255,255,255,0.05);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        /* Strategy Grid */
+        .controls-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .search-bar {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            color: #fff;
+            width: 300px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-bar:focus {
+            border-color: var(--primary);
+        }
+
+        .filters select {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 0.75rem 1.25rem;
+            color: #fff;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .strategy-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 2rem;
+        }
+
+        /* Strategy Card */
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2rem;
+            backdrop-filter: blur(16px);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(139, 92, 246, 0.4);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 40px rgba(139, 92, 246, 0.1);
+        }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+        }
+
+        .strat-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            margin-bottom: 0.25rem;
+        }
+
+        .strat-publisher {
+            font-size: 0.85rem;
+            color: var(--primary);
+            font-family: monospace;
+            background: rgba(139, 92, 246, 0.1);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .strat-badge {
+            background: linear-gradient(135deg, rgba(236,72,153,0.2), rgba(139,92,246,0.2));
+            color: #fff;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .strat-desc {
+            color: var(--text-sub);
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 2rem;
+            flex-grow: 1;
+        }
+
+        .metrics {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .metric {
+            background: rgba(0,0,0,0.2);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .metric-label {
+            display: block;
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            margin-bottom: 0.25rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .metric-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .metric-value.green {
+            color: var(--success);
+        }
+
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border);
+            padding-top: 1.5rem;
+        }
+
+        .price {
+            font-size: 1.5rem;
+            font-weight: 800;
+        }
+
+        .price span {
+            font-size: 1rem;
+            color: var(--text-dim);
+            font-weight: 500;
+        }
+
+        .btn-sub {
+            background: #fff;
+            color: var(--bg-base);
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-sub:hover {
+            background: var(--text-sub);
+            transform: scale(1.05);
+        }
+
+        /* Paid specific */
+        .btn-sub.paid {
+            background: linear-gradient(135deg, var(--primary), var(--accent-pink));
+            color: #fff;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 { font-size: 2.5rem; }
+            .controls-bar { flex-direction: column; gap: 1rem; align-items: stretch; }
+            .search-bar { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="orb-1"></div>
+    <div class="orb-2"></div>
+
+    <nav>
+        <div class="logo">AutoPortfolio REBALANCER</div>
+        <button class="btn-connect">Connect Wallet</button>
+    </nav>
+
+    <div class="container">
+        <div class="hero">
+            <h1>Strategy Marketplace</h1>
+            <p>Discover, subscribe, and deploy elite rebalancing strategies formulated by top DeFi quants directly to your portfolio via smart contracts.</p>
+            <div class="hero-actions">
+                <button class="btn-connect" onclick="alert('Publish UI opened')">Publish Your Strategy</button>
+                <button class="btn-outline">Learn How it Works</button>
+            </div>
+        </div>
+
+        <div class="controls-bar">
+            <input type="text" class="search-bar" placeholder="Search strategies, publishers...">
+            <div class="filters">
+                <select>
+                    <option>Sort by: Popularity</option>
+                    <option>Sort by: APY Highest</option>
+                    <option>Sort by: Newest</option>
+                    <option>Sort by: Lowest Fee</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="strategy-grid">
+            
+            <!-- Strategy 1 -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="strat-title">Conservative Stacks</div>
+                        <div class="strat-publisher">SP1J...K3P4</div>
+                    </div>
+                    <div class="strat-badge">#1 POPULAR</div>
+                </div>
+                <div class="strat-desc">
+                    A low-volatility STX/sBTC strategy utilizing broad moving averages to rebalance only during major market shifts. Ideal for long-term holders.
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="metric-label">Subscribers</span>
+                        <span class="metric-value">1,245</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Est. API</span>
+                        <span class="metric-value green">+12.4%</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="price">Free<span> / mo</span></div>
+                    <button class="btn-sub" onclick="subscribe(this, 'Conservative Stacks')">Subscribe</button>
+                </div>
+            </div>
+
+            <!-- Strategy 2 -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="strat-title">Alpha Yield Max</div>
+                        <div class="strat-publisher">SP3X...9MZ2</div>
+                    </div>
+                    <div class="strat-badge" style="background: linear-gradient(135deg, rgba(59,130,246,0.2), rgba(16,185,129,0.2));">PREMIUM</div>
+                </div>
+                <div class="strat-desc">
+                    High-frequency rebalancing using multi-band deviations. Actively captures volatility spread between Stacks ecosystem assets.
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="metric-label">Subscribers</span>
+                        <span class="metric-value">412</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Est. API</span>
+                        <span class="metric-value green">+45.1%</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="price">15 STX<span> / mo</span></div>
+                    <button class="btn-sub paid" onclick="subscribe(this, 'Alpha Yield Max')">Unlock Access</button>
+                </div>
+            </div>
+
+            <!-- Strategy 3 -->
+            <div class="card">
+                <div class="card-header">
+                    <div>
+                        <div class="strat-title">Stablecoin Hegemony</div>
+                        <div class="strat-publisher">SP5G...Q1XY</div>
+                    </div>
+                </div>
+                <div class="strat-desc">
+                    A defensive mechanism that heavily allocates into xUSD/USDA during Stacks downtrends and reverses fully during bull momentum.
+                </div>
+                <div class="metrics">
+                    <div class="metric">
+                        <span class="metric-label">Subscribers</span>
+                        <span class="metric-value">89</span>
+                    </div>
+                    <div class="metric">
+                        <span class="metric-label">Est. API</span>
+                        <span class="metric-value green">+8.2%</span>
+                    </div>
+                </div>
+                <div class="card-footer">
+                    <div class="price">5 STX<span> / mo</span></div>
+                    <button class="btn-sub paid" onclick="subscribe(this, 'Stablecoin Hegemony')">Unlock Access</button>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        // Mock subscription interaction
+        function subscribe(btn, stratName) {
+            const originalText = btn.innerText;
+            const originalBg = btn.style.background;
+            
+            btn.innerText = 'Contract Call...';
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+
+            // Simulate Stacks TX delay
+            setTimeout(() => {
+                btn.style.opacity = '1';
+                btn.style.background = 'var(--success)';
+                btn.style.color = '#fff';
+                btn.innerText = 'Subscribed!';
+                
+                // Show floating alert
+                const alert = document.createElement('div');
+                alert.style.position = 'fixed';
+                alert.style.bottom = '20px';
+                alert.style.right = '20px';
+                alert.style.background = 'rgba(16, 185, 129, 0.9)';
+                alert.style.color = '#fff';
+                alert.style.padding = '1rem 2rem';
+                alert.style.borderRadius = '12px';
+                alert.style.fontWeight = '600';
+                alert.style.backdropFilter = 'blur(10px)';
+                alert.style.boxShadow = '0 10px 25px rgba(0,0,0,0.3)';
+                alert.style.zIndex = '1000';
+                alert.innerText = `Successfully subscribed to ${stratName} on-chain!`;
+                
+                document.body.appendChild(alert);
+
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transition = 'opacity 0.5s';
+                    setTimeout(() => alert.remove(), 500);
+                }, 4000);
+
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

@@ -91,6 +91,11 @@ path = 'contracts/portfolio-cloning.clar'
 clarity_version = 3
 epoch = 'latest'
 
+[contracts.tax-report-export]
+path = 'contracts/tax-report-export.clar'
+clarity_version = 3
+epoch = 'latest'
+
 [repl.analysis]
 passes = ['check_checker']
 

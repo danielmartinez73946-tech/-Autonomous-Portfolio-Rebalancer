@@ -76,6 +76,11 @@ path = 'contracts/gas-optimizer.clar'
 clarity_version = 3
 epoch = 'latest'
 
+[contracts.multi-wallet-guardian]
+path = 'contracts/multi-wallet-guardian.clar'
+clarity_version = 3
+epoch = 'latest'
+
 [repl.analysis]
 passes = ['check_checker']
 

@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tax Reports - Autonomous Rebalancer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=IBM+Plex+Mono:wght@400;600&display=swap');
+
+        :root {
+            --bg-base: #f8fafc;
+            --bg-card: #ffffff;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+            --success: #10b981;
+            --danger: #ef4444;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --border: #e2e8f0;
+            --bg-table-head: #f1f5f9;
+        }
+
+        /* Dark Mode Support via media query for the premium toggle feel */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --bg-base: #0f172a;
+                --bg-card: #1e293b;
+                --primary: #3b82f6;
+                --primary-hover: #60a5fa;
+                --text-main: #f8fafc;
+                --text-muted: #94a3b8;
+                --border: #334155;
+                --bg-table-head: #0f172a;
+            }
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'DM Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+        }
+
+        nav {
+            padding: 1.5rem 5%;
+            background: var(--bg-card);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .brand {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .wallet {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            background: rgba(100,116,139,0.1);
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 3rem auto;
+            padding: 0 5%;
+        }
+
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            margin-bottom: 2rem;
+        }
+
+        .header-content h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .header-content p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            max-width: 600px;
+        }
+
+        /* Metrics */
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .metric-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+            transition: transform 0.2s;
+        }
+
+        .metric-card:hover { transform: translateY(-3px); }
+
+        .m-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+        }
+
+        .m-val {
+            font-size: 2rem;
+            font-weight: 700;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .m-val.green { color: var(--success); }
+
+        /* The Ledger */
+        .ledger-container {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 10px 15px -3px rgba(0,0,0,0.05);
+        }
+
+        .ledger-toolbar {
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--bg-table-head);
+        }
+
+        .toolbar-title { font-weight: 700; font-size: 1.25rem; }
+
+        .btn-export {
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-export:hover {
+            background: var(--primary-hover);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            border-bottom: 1px solid var(--border);
+            font-weight: 600;
+        }
+
+        td {
+            padding: 1.25rem 1.5rem;
+            border-bottom: 1px solid var(--border);
+            font-size: 0.95rem;
+            color: var(--text-main);
+        }
+
+        tr:last-child td { border-bottom: none; }
+
+        tr:hover td { background: rgba(100,116,139,0.02); }
+
+        .mono { font-family: 'IBM Plex Mono', monospace; font-size: 0.9rem; }
+
+        .tag-action {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: 700;
+            font-size: 0.8rem;
+        }
+
+        .tag-buy { background: rgba(16, 185, 129, 0.1); color: var(--success); }
+        .tag-sell { background: rgba(239, 68, 68, 0.1); color: var(--danger); }
+
+        .asset-icon {
+            display: inline-flex;
+            width: 24px; height: 24px;
+            background: #f1f5f9;
+            color: #000;
+            border-radius: 50%;
+            justify-content: center;
+            align-items: center;
+            font-size: 0.7rem;
+            font-weight: 700;
+            margin-right: 8px;
+            vertical-align: middle;
+        }
+
+        @media (max-width: 800px) {
+            header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+            .metrics-grid { grid-template-columns: 1fr; }
+            .ledger-toolbar { flex-direction: column; align-items: stretch; gap: 1rem; }
+            table { display: block; overflow-x: auto; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+            AutoPortfolio Tax
+        </div>
+        <div class="wallet">SP28...G89Y</div>
+    </nav>
+
+    <div class="container">
+        
+        <header>
+            <div class="header-content">
+                <h1>Tax Event Log (2025)</h1>
+                <p>Immutable record of all autonomous rebalance trades executed by your smart contract. Use this ledger for capital gains tax calculations.</p>
+            </div>
+            <div>
+                <!-- Extra top action if needed -->
+            </div>
+        </header>
+
+        <div class="metrics-grid">
+            <div class="metric-card">
+                <div class="m-label">Autonomous Trades YTD</div>
+                <div class="m-val">124</div>
+            </div>
+            <div class="metric-card">
+                <div class="m-label">Est. Total Volume (USD)</div>
+                <div class="m-val">$42,940</div>
+            </div>
+            <div class="metric-card">
+                <div class="m-label">Net Gain (Realized)</div>
+                <div class="m-val green">+$3,214.50</div>
+            </div>
+        </div>
+
+        <div class="ledger-container">
+            <div class="ledger-toolbar">
+                <div class="toolbar-title">On-Chain Transaction Ledger</div>
+                <button class="btn-export" onclick="exportCSV(this)">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Export as CSV (TurboTax)
+                </button>
+            </div>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Block / Date</th>
+                        <th>Action</th>
+                        <th>Asset & Amount</th>
+                        <th>Execution Price</th>
+                        <th>Total Value (USD)</th>
+                        <th>TxID</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Row 1 -->
+                    <tr>
+                        <td>
+                            <div class="mono">#144,821</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Oct 24, 2025 • 14:32</div>
+                        </td>
+                        <td><span class="tag-action tag-sell">SELL</span></td>
+                        <td><span class="asset-icon">S</span> 1,250.00 STX</td>
+                        <td class="mono">$ 1.84</td>
+                        <td class="mono" style="font-weight: 600;">$ 2,300.00</td>
+                        <td><a href="#" style="color: var(--primary); text-decoration: none;" class="mono">0x4a9p...</a></td>
+                    </tr>
+                    
+                    <!-- Row 2 -->
+                    <tr>
+                        <td>
+                            <div class="mono">#144,821</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Oct 24, 2025 • 14:32</div>
+                        </td>
+                        <td><span class="tag-action tag-buy">BUY</span></td>
+                        <td><span class="asset-icon">B</span> 0.034 sBTC</td>
+                        <td class="mono">$ 67,647.05</td>
+                        <td class="mono" style="font-weight: 600;">$ 2,300.00</td>
+                        <td><a href="#" style="color: var(--primary); text-decoration: none;" class="mono">0x4a9p...</a></td>
+                    </tr>
+
+                    <!-- Row 3 -->
+                    <tr>
+                        <td>
+                            <div class="mono">#142,105</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Sep 18, 2025 • 09:15</div>
+                        </td>
+                        <td><span class="tag-action tag-sell">SELL</span></td>
+                        <td><span class="asset-icon">X</span> 4,500.00 xUSD</td>
+                        <td class="mono">$ 1.00</td>
+                        <td class="mono" style="font-weight: 600;">$ 4,500.00</td>
+                        <td><a href="#" style="color: var(--primary); text-decoration: none;" class="mono">0x81ff...</a></td>
+                    </tr>
+
+                    <!-- Row 4 -->
+                    <tr>
+                        <td>
+                            <div class="mono">#142,105</div>
+                            <div style="font-size: 0.8rem; color: var(--text-muted); margin-top: 4px;">Sep 18, 2025 • 09:15</div>
+                        </td>
+                        <td><span class="tag-action tag-buy">BUY</span></td>
+                        <td><span class="asset-icon">S</span> 3,000.00 STX</td>
+                        <td class="mono">$ 1.50</td>
+                        <td class="mono" style="font-weight: 600;">$ 4,500.00</td>
+                        <td><a href="#" style="color: var(--primary); text-decoration: none;" class="mono">0x81ff...</a></td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        function exportCSV(btn) {
+            const ogText = btn.innerHTML;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite"><line x1="12" y1="2" x2="12" y2="6"></line><line x1="12" y1="18" x2="12" y2="22"></line><line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line><line x1="2" y1="12" x2="6" y2="12"></line><line x1="18" y1="12" x2="22" y2="12"></line><line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line></svg> Generating...`;
+            btn.style.opacity = '0.8';
+            btn.style.pointerEvents = 'none';
+
+            // Simulate parsing blockchain data
+            setTimeout(() => {
+                btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Download Started`;
+                btn.style.background = 'var(--success)';
+                btn.style.boxShadow = '0 4px 12px rgba(16, 185, 129, 0.3)';
+
+                // Download logic hack
+                const csvContent = "data:text/csv;charset=utf-8,Date,Action,Asset,Amount,PriceUSD,TotalUSD,TxID\n2025-10-24,SELL,STX,1250,1.84,2300.00,0x4a9p...\n2025-10-24,BUY,sBTC,0.034,67647.05,2300.00,0x4a9p...\n2025-09-18,SELL,xUSD,4500,1.00,4500.00,0x81ff...\n2025-09-18,BUY,STX,3000,1.50,4500.00,0x81ff...";
+                const encodedUri = encodeURI(csvContent);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "AutoPortfolio_Tax_Export_2025.csv");
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+
+                setTimeout(() => {
+                    btn.innerHTML = ogText;
+                    btn.style.background = 'var(--primary)';
+                    btn.style.boxShadow = 'none';
+                    btn.style.pointerEvents = 'auto';
+                    btn.style.opacity = '1';
+                }, 3000);
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

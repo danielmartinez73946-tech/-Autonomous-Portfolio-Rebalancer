@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Referral Rewards - Autonomous Portfolio Rebalancer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg-primary: #0f172a;
+            --bg-secondary: #1e293b;
+            --accent-purple: #8b5cf6;
+            --accent-glow: rgba(139, 92, 246, 0.4);
+            --gradient-start: #6366f1;
+            --gradient-end: #a855f7;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --green-glow: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Abstract Background Glow */
+        .bg-glow {
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-glow) 0%, rgba(15,23,42,0) 70%);
+            top: -200px;
+            left: -200px;
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(50px);
+        }
+
+        .bg-glow-right {
+            position: absolute;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(15,23,42,0) 70%);
+            bottom: -100px;
+            right: -100px;
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(60px);
+        }
+
+        nav {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0 3rem 0;
+            z-index: 10;
+        }
+
+        h1.logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .wallet-btn {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px var(--accent-glow);
+        }
+
+        .wallet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(139, 92, 246, 0.6);
+        }
+
+        main {
+            width: 100%;
+            max-width: 1000px;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+            margin-top: 2rem;
+        }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .glass-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.4);
+            border-color: rgba(139, 92, 246, 0.3);
+        }
+
+        .hero-section {
+            grid-column: 1 / -1;
+            text-align: center;
+            padding: 4rem 2rem;
+            background: linear-gradient(180deg, rgba(30,41,59,0) 0%, rgba(30,41,59,0.5) 100%);
+            border-radius: 32px;
+            margin-bottom: 2rem;
+        }
+
+        .hero-title {
+            font-size: 3.5rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff, #a855f7);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            margin-bottom: 1.5rem;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        h2 svg {
+            color: var(--accent-purple);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-box {
+            background: rgba(15, 23, 42, 0.5);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px solid var(--border-color);
+        }
+
+        .stat-label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--green-glow);
+        }
+
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        input[type="text"] {
+            flex: 1;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 0.8rem 1rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        input[type="text"]:focus {
+            border-color: var(--accent-purple);
+            box-shadow: 0 0 10px rgba(139, 92, 246, 0.2);
+        }
+
+        .action-btn {
+            background: var(--bg-secondary);
+            color: #fff;
+            border: 1px solid var(--border-color);
+            padding: 0.8rem 1.5rem;
+            border-radius: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            white-space: nowrap;
+        }
+
+        .action-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        .primary-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--green-glow), #059669);
+            color: white;
+            border: none;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+            margin-top: 1rem;
+        }
+
+        .primary-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(16, 185, 129, 0.5);
+        }
+
+        .success-msg {
+            display: none;
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--green-glow);
+            padding: 1rem;
+            border-radius: 12px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            margin-top: 1rem;
+            text-align: center;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Mobile Responsive */
+        @media (max-width: 768px) {
+            main {
+                grid-template-columns: 1fr;
+            }
+            .hero-title {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+    <div class="bg-glow-right"></div>
+
+    <nav>
+        <h1 class="logo">AutoPortfolio REBALANCER</h1>
+        <button class="wallet-btn" id="connectWalletBtn">Connect Wallet</button>
+    </nav>
+
+    <main>
+        <div class="hero-section">
+            <h1 class="hero-title">Invite & Earn Crypto</h1>
+            <p class="hero-subtitle">Refer your friends to Autonomous Portfolio Rebalancer and you both earn 50 & 25 Reward Points respectively when they complete their first rebalance.</p>
+        </div>
+
+        <!-- Left Column: Generate/Share Link -->
+        <div class="glass-card">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+                Your Referral Hub
+            </h2>
+            <p style="color: var(--text-muted); margin-bottom: 2rem; line-height: 1.5;">Share this link with your friends. Once they connect and transact, the smart contract automatically credits your account.</p>
+            
+            <div class="input-group">
+                <label>Your Unique Referral Link</label>
+                <div class="input-wrapper">
+                    <input type="text" id="referralLink" value="https://rebalancer.app/?ref=SP3FG...9JZ" readonly>
+                    <button class="action-btn" onclick="copyLink()">Copy</button>
+                </div>
+            </div>
+
+            <button class="primary-btn" id="claimBonusBtn" onclick="claimRewards()">Claim Pending Rewards</button>
+            <div id="claimSuccess" class="success-msg">Rewards claimed successfully!</div>
+        </div>
+
+        <!-- Right Column: Stats & Submit Referral -->
+        <div class="glass-card">
+            <h2>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                Reward Stats
+            </h2>
+            
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-label">Total Referred</div>
+                    <div class="stat-value" id="totalReferred">12</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-label">Points Balance</div>
+                    <div class="stat-value" id="pointsBalance">650</div>
+                </div>
+            </div>
+
+            <hr style="border-color: var(--border-color); margin: 2rem 0;">
+
+            <h3>Were you referred?</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin: 1rem 0;">Enter your referrer's STX address before your first rebalance to activate your new user bonus.</p>
+            
+            <div class="input-group">
+                <div class="input-wrapper">
+                    <input type="text" id="referrerAddress" placeholder="Enter strictly STX Address (SP...)">
+                </div>
+            </div>
+            <button class="action-btn" style="width: 100%; background: rgba(139, 92, 246, 0.2); border-color: var(--accent-purple); color: #fff;" onclick="submitReferral()">Register Referrer On-Chain</button>
+            <div id="registerSuccess" class="success-msg">Referrer registered permanently on-chain!</div>
+        </div>
+    </main>
+
+    <script>
+        // Mocking UI interactivity 
+        function copyLink() {
+            const linkInput = document.getElementById('referralLink');
+            linkInput.select();
+            document.execCommand('copy');
+            const btn = event.target;
+            btn.innerText = 'Copied!';
+            btn.style.background = 'var(--green-glow)';
+            setTimeout(() => {
+                btn.innerText = 'Copy';
+                btn.style.background = 'var(--bg-secondary)';
+            }, 2000);
+        }
+
+        function claimRewards() {
+            const btn = document.getElementById('claimBonusBtn');
+            btn.innerHTML = 'Executing Contract Call...';
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+
+            // Simulate Stacks API wait
+            setTimeout(() => {
+                btn.innerHTML = 'Claim Pending Rewards';
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+                document.getElementById('claimSuccess').style.display = 'block';
+                document.getElementById('pointsBalance').innerText = parseInt(document.getElementById('pointsBalance').innerText) + 50;
+                
+                setTimeout(() => {
+                    document.getElementById('claimSuccess').style.display = 'none';
+                }, 4000);
+            }, 2000);
+        }
+
+        function submitReferral() {
+            const addr = document.getElementById('referrerAddress').value;
+            if(!addr || !addr.startsWith('SP')) {
+                alert('Please enter a valid STX address starting with SP');
+                return;
+            }
+
+            const btn = event.target;
+            const originalText = btn.innerText;
+            btn.innerHTML = 'Confirming transaction...';
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+
+            // Simulate Stacks API wait
+            setTimeout(() => {
+                btn.innerHTML = originalText;
+                btn.style.opacity = '1';
+                btn.style.pointerEvents = 'auto';
+                document.getElementById('registerSuccess').style.display = 'block';
+                document.getElementById('referrerAddress').value = '';
+                
+                setTimeout(() => {
+                    document.getElementById('registerSuccess').style.display = 'none';
+                }, 4000);
+            }, 2500);
+        }
+    </script>
+</body>
+</html>

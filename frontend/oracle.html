@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TWAP Oracle Data - Autonomous Portfolio Rebalancer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg-primary: #050510;
+            --bg-secondary: #0a0d1d;
+            --accent-cyan: #06b6d4;
+            --accent-blue: #3b82f6;
+            --gradient-start: #06b6d4;
+            --gradient-end: #3b82f6;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --card-bg: rgba(10, 13, 29, 0.7);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 15% 50%, rgba(6, 182, 212, 0.08), transparent 25%),
+                radial-gradient(circle at 85% 30%, rgba(59, 130, 246, 0.08), transparent 25%);
+        }
+
+        /* Abstract Grid Background */
+        .bg-grid {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-size: 50px 50px;
+            background-image: 
+                linear-gradient(to right, rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
+            z-index: 0;
+            pointer-events: none;
+            mask-image: linear-gradient(to bottom, black 20%, transparent 80%);
+            -webkit-mask-image: linear-gradient(to bottom, black 20%, transparent 80%);
+        }
+
+        nav {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0 3rem 0;
+            z-index: 10;
+        }
+
+        h1.logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #94a3b8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .header-content {
+            text-align: center;
+            width: 100%;
+            max-width: 800px;
+            margin-bottom: 3rem;
+            z-index: 10;
+        }
+
+        .header-title {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff, var(--accent-cyan));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -1px;
+        }
+
+        main {
+            width: 100%;
+            max-width: 1200px;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 2rem;
+        }
+
+        .oracle-card {
+            background: var(--card-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s ease, border-color 0.3s ease;
+        }
+
+        .oracle-card:hover {
+            transform: translateY(-5px);
+            border-color: rgba(6, 182, 212, 0.3);
+        }
+
+        .card-glow {
+            position: absolute;
+            width: 200px;
+            height: 200px;
+            background: var(--accent-blue);
+            filter: blur(80px);
+            opacity: 0.15;
+            top: -50px;
+            right: -50px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .asset-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .asset-title {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+
+        .asset-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            background: linear-gradient(135deg, #1e293b, #0f172a);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+            box-shadow: inset 0 2px 10px rgba(255,255,255,0.05);
+        }
+
+        .live-tag {
+            background: rgba(6, 182, 212, 0.1);
+            color: var(--accent-cyan);
+            padding: 6px 12px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            border: 1px solid rgba(6, 182, 212, 0.2);
+            animation: pulse 2s infinite;
+        }
+
+        .live-dot {
+            width: 6px;
+            height: 6px;
+            background: var(--accent-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 8px var(--accent-cyan);
+        }
+
+        @keyframes pulse {
+            0% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0.4); }
+            70% { box-shadow: 0 0 0 6px rgba(6, 182, 212, 0); }
+            100% { box-shadow: 0 0 0 0 rgba(6, 182, 212, 0); }
+        }
+
+        .price-display {
+            margin-bottom: 2rem;
+        }
+
+        .price-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 0.5rem;
+        }
+
+        .price-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 3.5rem;
+            font-weight: 500;
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+        }
+
+        .price-currency {
+            font-size: 1.5rem;
+            color: var(--text-muted);
+        }
+
+        .data-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.03);
+        }
+
+        .data-item {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .data-item-label {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .data-item-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: #fff;
+        }
+
+        .poster-info {
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .code-address {
+            font-family: 'JetBrains Mono', monospace;
+            background: rgba(255,255,255,0.05);
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: #cbd5e1;
+        }
+
+        .refresh-btn {
+            background: transparent;
+            color: var(--accent-cyan);
+            border: 1px solid rgba(6, 182, 212, 0.3);
+            padding: 6px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(6, 182, 212, 0.1);
+        }
+
+        /* Controls Section */
+        .admin-controls {
+            grid-column: 1 / -1;
+            background: linear-gradient(to right, rgba(10, 13, 29, 0.8), rgba(6, 182, 212, 0.05));
+            border-radius: 20px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .admin-inputs {
+            display: flex;
+            gap: 1rem;
+        }
+
+        .input-btn {
+            background: var(--text-main);
+            color: var(--bg-primary);
+            border: none;
+            padding: 0.8rem 1.5rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .input-btn:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 15px rgba(255,255,255,0.2);
+        }
+
+        @media (max-width: 900px) {
+            main { grid-template-columns: 1fr; }
+            .admin-controls { flex-direction: column; gap: 1.5rem; align-items: flex-start; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+
+    <nav>
+        <h1 class="logo">AutoPortfolio REBALANCER</h1>
+    </nav>
+
+    <div class="header-content">
+        <h1 class="header-title">Manipulation-Resistant Oracle</h1>
+        <p style="color: var(--text-muted); font-size: 1.1rem; line-height: 1.6;">Real-time view of the Time-Weighted Average Price (TWAP) feeds powering our autonomous rebalancer. Securing portfolios algorithmically against flash-loan attacks.</p>
+    </div>
+
+    <main>
+        <!-- STX Oracle Card -->
+        <div class="oracle-card">
+            <div class="card-glow" style="background: #f59e0b;"></div>
+            
+            <div class="asset-header">
+                <div class="asset-title">
+                    <div class="asset-icon" style="color: #f59e0b;">STX</div>
+                    Stacks
+                </div>
+                <div class="live-tag">
+                    <div class="live-dot" style="background: #f59e0b; box-shadow: 0 0 8px #f59e0b;"></div>
+                    Oracle Active
+                </div>
+            </div>
+
+            <div class="price-display">
+                <div class="price-label">Time-Weighted Avg Price (24h)</div>
+                <div class="price-value">
+                    <span class="price-currency">$</span><span id="stxTwap">1.8420</span>
+                </div>
+            </div>
+
+            <div class="data-grid">
+                <div class="data-item">
+                    <span class="data-item-label">Latest Spot Price</span>
+                    <span class="data-item-value" style="color: #cbd5e1;">$1.8510</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-item-label">TWAP Window</span>
+                    <span class="data-item-value">144 Blocks</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-item-label">Accumulator State</span>
+                    <span class="data-item-value">2,845,910</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-item-label">Last Updated</span>
+                    <span class="data-item-value" id="stxBlock">Block #162,492</span>
+                </div>
+            </div>
+
+            <div class="poster-info">
+                <span>Updated by: <span class="code-address">SP2K...V9Z</span></span>
+                <button class="refresh-btn" style="color: #f59e0b; border-color: rgba(245,158,11,0.3);" onclick="refreshData('stx', this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 1 0 2.63-6.37L2 12"></path></svg>
+                    Sync
+                </button>
+            </div>
+        </div>
+
+        <!-- BTC Oracle Card -->
+        <div class="oracle-card">
+            <div class="card-glow"></div>
+            
+            <div class="asset-header">
+                <div class="asset-title">
+                    <div class="asset-icon" style="color: #f7931a;"><svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M14.5 10c1.5 0 2.5-1 2.5-2.5S16 5 14.5 5H8v5h6.5z"/><path d="M15.5 12.5c1.5 0 2.5-1 2.5-2.5S17 7.5 15.5 7.5H8v5h7.5z" opacity="0.5"/><path d="M16 16c1.5 0 2.5-1 2.5-2.5S17.5 11 16 11H8v5h8z"/></svg></div>
+                    sBTC
+                </div>
+                <div class="live-tag">
+                    <div class="live-dot"></div>
+                    Oracle Active
+                </div>
+            </div>
+
+            <div class="price-display">
+                <div class="price-label">Time-Weighted Avg Price (24h)</div>
+                <div class="price-value">
+                    <span class="price-currency">$</span><span id="btcTwap">68,412.50</span>
+                </div>
+            </div>
+
+            <div class="data-grid">
+                <div class="data-item">
+                    <span class="data-item-label">Latest Spot Price</span>
+                    <span class="data-item-value" style="color: #cbd5e1;">$68,140.00</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-item-label">TWAP Window</span>
+                    <span class="data-item-value">144 Blocks</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-item-label">Accumulator State</span>
+                    <span class="data-item-value">9,851,332,100</span>
+                </div>
+                <div class="data-item">
+                    <span class="data-item-label">Last Updated</span>
+                    <span class="data-item-value" id="btcBlock">Block #162,492</span>
+                </div>
+            </div>
+
+            <div class="poster-info">
+                <span>Updated by: <span class="code-address">SP2K...V9Z</span> (Keeper Bot)</span>
+                <button class="refresh-btn" onclick="refreshData('btc', this)">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 1 0 2.63-6.37L2 12"></path></svg>
+                    Sync
+                </button>
+            </div>
+        </div>
+
+        <!-- Admin Controls -->
+        <div class="admin-controls">
+            <div>
+                <h3 style="margin-bottom: 0.5rem;">Oracle Administration</h3>
+                <p style="color: var(--text-muted); font-size: 0.9rem;">Manage authorized price posters and TWAP window duration.</p>
+            </div>
+            <div class="admin-inputs">
+                <button class="input-btn" style="background: transparent; border: 1px solid var(--border-color); color: #fff;" onclick="alert('Contract call: set-twap-window')">Configure Window</button>
+                <button class="input-btn" onclick="alert('Contract call: set-poster-authorization')">Manage Keepers</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Mock data updates for visualization
+        function refreshData(asset, btn) {
+            const ogHtml = btn.innerHTML;
+            btn.innerHTML = 'SYNCING...';
+            btn.style.opacity = '0.7';
+
+            setTimeout(() => {
+                if (asset === 'stx') {
+                    const price = (1.8300 + Math.random() * 0.03).toFixed(4);
+                    document.getElementById('stxTwap').innerText = price;
+                    document.getElementById('stxBlock').innerText = 'Block #' + (162492 + Math.floor(Math.random() * 5));
+                } else {
+                    const price = (68200 + Math.random() * 500).toFixed(2);
+                    document.getElementById('btcTwap').innerText = parseFloat(price).toLocaleString();
+                    document.getElementById('btcBlock').innerText = 'Block #' + (162492 + Math.floor(Math.random() * 5));
+                }
+                
+                btn.innerHTML = ogHtml;
+                btn.style.opacity = '1';
+                btn.style.background = 'rgba(255,255,255,0.1)';
+                setTimeout(() => btn.style.background = 'transparent', 500);
+            }, 800);
+        }
+    </script>
+</body>
+</html>

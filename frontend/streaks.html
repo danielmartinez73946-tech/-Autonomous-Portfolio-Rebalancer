@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reward Streaks - Autonomous Portfolio Rebalancer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600;800&family=Syncopate:wght@700&display=swap');
+
+        :root {
+            --bg-base: #0f0c29;
+            --bg-mid: #302b63;
+            --bg-light: #24243e;
+            --text-main: #ffffff;
+            --text-dim: #9ca3af;
+            
+            --tier-bronze: #cd7f32;
+            --tier-silver: #c0c0c0;
+            --tier-gold: #ffd700;
+            --tier-diamond: #b9f2ff;
+
+            --current-tier: var(--tier-gold);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* Abstract Topographic BG */
+        .bg-topology {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: radial-gradient(circle at 100% 0%, rgba(255,215,0,0.1), transparent 50%),
+                              radial-gradient(circle at 0% 100%, rgba(185,242,255,0.05), transparent 50%);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        nav {
+            padding: 2rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .brand {
+            font-family: 'Syncopate', sans-serif;
+            font-size: 1.2rem;
+            letter-spacing: 2px;
+            background: linear-gradient(to right, #fff, var(--text-dim));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem 5%;
+            z-index: 10;
+            display: grid;
+            grid-template-columns: 1fr 1.5fr;
+            gap: 3rem;
+            align-items: center;
+        }
+
+        /* Left Side: Streak Focus */
+        .hero-left {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        .tier-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(255, 215, 0, 0.1);
+            border: 1px solid rgba(255, 215, 0, 0.3);
+            color: var(--tier-gold);
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            width: fit-content;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+            animation: float 4s ease-in-out infinite;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        h1 {
+            font-size: 4rem;
+            font-weight: 800;
+            line-height: 1.1;
+        }
+
+        .highlight {
+            color: var(--current-tier);
+            text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+            max-width: 400px;
+        }
+
+        /* Right Side: Dashboard Cards */
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+
+        .card {
+            background: rgba(255,255,255,0.03);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 20px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform 0.3s;
+        }
+
+        .card:hover {
+            transform: translateX(-5px);
+            border-color: rgba(255,215,0,0.2);
+            background: rgba(255,255,255,0.05);
+        }
+
+        /* Progress Circle */
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 2rem;
+        }
+
+        .circular-chart {
+            display: block;
+            margin: 0;
+            max-width: 120px;
+            max-height: 120px;
+        }
+
+        .circle-bg {
+            fill: none;
+            stroke: rgba(255,255,255,0.05);
+            stroke-width: 3;
+        }
+
+        .circle {
+            fill: none;
+            stroke-width: 3;
+            stroke-linecap: round;
+            animation: progress 1s ease-out forwards;
+        }
+
+        .circle.gold {
+            stroke: var(--tier-gold);
+            filter: drop-shadow(0 0 5px rgba(255,215,0,0.8));
+        }
+
+        @keyframes progress {
+            0% { stroke-dasharray: 0 100; }
+        }
+
+        .percentage {
+            fill: #fff;
+            font-family: 'Poppins', sans-serif;
+            font-size: 0.5rem;
+            text-anchor: middle;
+            font-weight: 800;
+        }
+
+        .prog-text h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.25rem;
+        }
+        
+        .prog-text p {
+            color: var(--text-dim);
+            font-size: 0.9rem;
+        }
+
+        /* Rewards List */
+        .rewards-list {
+            margin-top: 1rem;
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+
+        .reward-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem;
+            background: rgba(0,0,0,0.3);
+            border-radius: 12px;
+            border-left: 4px solid var(--tier-gold);
+        }
+
+        .reward-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .reward-desc {
+            font-size: 0.85rem;
+            color: var(--text-dim);
+        }
+
+        .reward-status {
+            font-weight: 800;
+            color: var(--tier-gold);
+            background: rgba(255,215,0,0.1);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+
+        .btn-simulate {
+            background: transparent;
+            border: 1px solid var(--tier-gold);
+            color: var(--tier-gold);
+            padding: 1rem;
+            width: 100%;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            cursor: pointer;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.2s;
+            margin-top: 1rem;
+        }
+
+        .btn-simulate:hover {
+            background: var(--tier-gold);
+            color: var(--bg-base);
+            box-shadow: 0 0 30px rgba(255,215,0,0.4);
+        }
+
+        @media (max-width: 900px) {
+            .container { grid-template-columns: 1fr; }
+            h1 { font-size: 3rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-topology"></div>
+
+    <nav>
+        <div class="brand">AUTOPORTFOLIO REBALANCER</div>
+        <div style="font-weight: 600; font-family: 'Syncopate', sans-serif;">SP28...G89Y</div>
+    </nav>
+
+    <div class="container">
+        
+        <!-- Interactive Left Hero -->
+        <div class="hero-left">
+            <div class="tier-badge">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                Current Tier: Gold
+            </div>
+            
+            <h1>7 Consecutive<br><span class="highlight">Rebalances</span></h1>
+            
+            <p class="subtitle">You have maintained consistent autonomous rebalancing. Extend your streak to 10 to evolve your status to Diamond Tier and double your fee discounts.</p>
+            
+            <button class="btn-simulate" onclick="simulateRebalance(this)">
+                Simulate Successful Rebalance
+            </button>
+        </div>
+
+        <!-- Right Side Stats -->
+        <div class="dashboard">
+            <!-- Progress Card -->
+            <div class="card">
+                <div class="progress-container">
+                    <svg viewBox="0 0 36 36" class="circular-chart">
+                        <path class="circle-bg"
+                            d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <path class="circle gold" id="progressBar"
+                            stroke-dasharray="70, 100"
+                            d="M18 2.0845
+                            a 15.9155 15.9155 0 0 1 0 31.831
+                            a 15.9155 15.9155 0 0 1 0 -31.831"
+                        />
+                        <text x="18" y="20.35" class="percentage" id="progressPct" fill="var(--tier-gold)">70%</text>
+                    </svg>
+
+                    <div class="prog-text">
+                        <h3>Progress to Diamond</h3>
+                        <p>3 more rebalances to reach maximum protocol altitude.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Perks Card -->
+            <div class="card">
+                <h3 style="margin-bottom: 0.5rem;">Active Perks</h3>
+                <p style="color: var(--text-dim); font-size: 0.9rem;">Rewards unlocked by your current Gold tier execution standing.</p>
+
+                <div class="rewards-list">
+                    <div class="reward-item">
+                        <div>
+                            <div class="reward-title">Protocol Fee Discount</div>
+                            <div class="reward-desc">Save flat 15% on all protocol execution fees.</div>
+                        </div>
+                        <div class="reward-status">-15% FEE</div>
+                    </div>
+
+                    <div class="reward-item">
+                        <div>
+                            <div class="reward-title">Referral Point Multiplier</div>
+                            <div class="reward-desc">Earn 1.5x more points when users join via your link.</div>
+                        </div>
+                        <div class="reward-status">1.5x MULTIPLIER</div>
+                    </div>
+                    
+                    <div class="reward-item" style="border-color: rgba(255,255,255,0.1); opacity: 0.5;">
+                        <div>
+                            <div class="reward-title">Early Strategy Access</div>
+                            <div class="reward-desc">Unlock Beta Marketplace Strategies.</div>
+                        </div>
+                        <div class="reward-status" style="color: var(--text-dim); background: rgba(255,255,255,0.05);">DIAMOND ONLY</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        let streak = 7;
+
+        function simulateRebalance(btn) {
+            const ogText = btn.innerText;
+            btn.innerText = 'Mining Block...';
+            btn.style.pointerEvents = 'none';
+            btn.style.opacity = '0.7';
+
+            setTimeout(() => {
+                streak++;
+                document.querySelector('h1').innerHTML = `${streak} Consecutive<br><span class="highlight">Rebalances</span>`;
+                
+                const pct = streak * 10; // Simple logic: 10 = 100% Diamond
+                let progressStr = pct > 100 ? 100 : pct;
+                
+                const circle = document.getElementById('progressBar');
+                const pctText = document.getElementById('progressPct');
+                
+                circle.style.strokeDasharray = `${progressStr}, 100`;
+                pctText.textContent = `${progressStr}%`;
+
+                if(streak === 10) {
+                    evolveToDiamond();
+                }
+
+                btn.innerText = 'Rebalance Hook Registered ✓';
+                btn.style.background = 'rgba(16, 185, 129, 0.2)';
+                btn.style.borderColor = '#10b981';
+                btn.style.color = '#10b981';
+                btn.style.boxShadow = 'none';
+                
+                setTimeout(() => {
+                    btn.innerText = ogText;
+                    btn.style.background = 'transparent';
+                    btn.style.borderColor = 'var(--current-tier)';
+                    btn.style.color = 'var(--current-tier)';
+                    btn.style.pointerEvents = 'auto';
+                    btn.style.opacity = '1';
+                }, 2000);
+
+            }, 1200);
+        }
+
+        function evolveToDiamond() {
+            // Update CSS variables globally
+            document.documentElement.style.setProperty('--current-tier', 'var(--tier-diamond)');
+            
+            const badge = document.querySelector('.tier-badge');
+            badge.innerHTML = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+                Current Tier: Diamond`;
+            badge.style.background = 'rgba(185, 242, 255, 0.1)';
+            badge.style.borderColor = 'rgba(185, 242, 255, 0.3)';
+            badge.style.color = 'var(--tier-diamond)';
+            badge.style.boxShadow = '0 0 20px rgba(185, 242, 255, 0.2)';
+
+            const circle = document.getElementById('progressBar');
+            circle.style.stroke = 'var(--tier-diamond)';
+            circle.style.filter = 'drop-shadow(0 0 5px rgba(185, 242, 255, 0.8))';
+            
+            const pctText = document.getElementById('progressPct');
+            pctText.style.fill = 'var(--tier-diamond)';
+
+            document.querySelector('.prog-text h3').innerText = 'Max Tier Reached';
+            document.querySelector('.prog-text p').innerText = 'You are at the pinnacle of protocol automation.';
+
+            // Update disabled reward
+            const lockedReward = document.querySelectorAll('.reward-item')[2];
+            lockedReward.style.opacity = '1';
+            lockedReward.style.borderColor = 'var(--tier-diamond)';
+            lockedReward.querySelector('.reward-status').style.color = 'var(--tier-diamond)';
+            lockedReward.querySelector('.reward-status').style.background = 'rgba(185, 242, 255, 0.1)';
+            lockedReward.querySelector('.reward-status').innerText = 'UNLOCKED';
+            
+            // Adjust other rewards color
+            document.querySelectorAll('.reward-item').forEach(item => {
+                item.style.borderLeftColor = 'var(--tier-diamond)';
+            });
+            document.querySelectorAll('.reward-status').forEach(item => {
+                item.style.color = 'var(--tier-diamond)';
+                item.style.background = 'rgba(185, 242, 255, 0.1)';
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,425 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Guardian Security - Autonomous Portfolio Rebalancer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap');
+
+        :root {
+            --bg-base: #09090b;
+            --bg-card: rgba(24, 24, 27, 0.7);
+            --primary: #18181b;
+            --emerald: #10b981;
+            --rose: #f43f5e;
+            --cyan: #06b6d4;
+            --text-main: #fafafa;
+            --text-sub: #a1a1aa;
+            --border: rgba(255, 255, 255, 0.1);
+            --gradient-safe: linear-gradient(135deg, #059669, #10b981);
+            --gradient-danger: linear-gradient(135deg, #e11d48, #f43f5e);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow-x: hidden;
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(16, 185, 129, 0.05), transparent 40%),
+                radial-gradient(circle at 100% 100%, rgba(244, 63, 94, 0.05), transparent 40%);
+        }
+
+        /* Abstract Security Mesh */
+        .mesh-bg {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-image: var(--bg-base);
+            background-size: 30px 30px;
+            background-image: 
+                linear-gradient(to right, rgba(255,255,255,0.02) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(255,255,255,0.02) 1px, transparent 1px);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1100px;
+            padding: 2rem;
+            z-index: 10;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 4rem;
+        }
+
+        .shield-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 80px; height: 80px;
+            background: rgba(16, 185, 129, 0.1);
+            border-radius: 20px;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: var(--emerald);
+            margin-bottom: 1.5rem;
+            box-shadow: 0 0 30px rgba(16, 185, 129, 0.2);
+            position: relative;
+        }
+
+        .shield-icon::after {
+            content: '';
+            position: absolute;
+            top: -5px; left: -5px; right: -5px; bottom: -5px;
+            border-radius: 25px;
+            border: 1px solid rgba(16, 185, 129, 0.2);
+            animation: pulse-shield 2s infinite;
+        }
+
+        @keyframes pulse-shield {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(1.1); opacity: 0; }
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            letter-spacing: -1px;
+            margin-bottom: 1rem;
+            background: linear-gradient(to right, #fff, #a1a1aa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-sub);
+            max-width: 600px;
+            margin: 0 auto;
+            line-height: 1.6;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--bg-card);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border);
+            border-radius: 24px;
+            padding: 2.5rem;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.4);
+            transition: transform 0.3s, border-color 0.3s;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            border-color: rgba(255,255,255,0.2);
+        }
+
+        .glow-line {
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+        }
+
+        .card-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 2rem;
+        }
+
+        .card-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #fff;
+        }
+
+        /* Status Display */
+        .status-block {
+            background: rgba(0,0,0,0.3);
+            border-radius: 16px;
+            padding: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+
+        .status-label {
+            color: var(--text-sub);
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .status-val {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 1.1rem;
+            color: #fff;
+        }
+
+        .badge {
+            padding: 8px 16px;
+            border-radius: 999px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .badge.safe {
+            background: rgba(16, 185, 129, 0.1);
+            color: var(--emerald);
+            border: 1px solid rgba(16, 185, 129, 0.2);
+        }
+        
+        .badge.danger {
+            background: rgba(244, 63, 94, 0.1);
+            color: var(--rose);
+            border: 1px solid rgba(244, 63, 94, 0.2);
+        }
+
+        /* Form Elements */
+        .input-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 0.8rem;
+            color: var(--text-main);
+            font-weight: 500;
+            font-size: 0.95rem;
+        }
+
+        input {
+            width: 100%;
+            background: rgba(9, 9, 11, 0.8);
+            border: 1px solid var(--border);
+            color: #fff;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            transition: all 0.2s;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        input:focus {
+            border-color: var(--cyan);
+            box-shadow: 0 0 0 2px rgba(6, 182, 212, 0.2);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: 600;
+            border: none;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-cyan {
+            background: linear-gradient(135deg, #06b6d4, #0ea5e9);
+            color: white;
+            box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+        }
+        .btn-cyan:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(6, 182, 212, 0.4); }
+
+        .btn-danger {
+            background: var(--gradient-danger);
+            color: white;
+            box-shadow: 0 4px 15px rgba(244, 63, 94, 0.3);
+        }
+        .btn-danger:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(244, 63, 94, 0.4); }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            margin-top: 1rem;
+        }
+        .btn-outline:hover { background: rgba(255,255,255,0.05); }
+
+        @media (max-width: 800px) {
+            .dashboard { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="mesh-bg"></div>
+
+    <div class="container">
+        <header>
+            <div class="shield-icon" id="masterShield">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+            </div>
+            <h1>Guardian Security</h1>
+            <p class="subtitle">Assign a trusted secondary hardware wallet as your portfolio's guardian. It can unilaterally pause autonomous rebalancing and orchestrate emergency fund retrievals.</p>
+        </header>
+
+        <div class="dashboard">
+            <!-- Guardian Config Panel -->
+            <div class="card">
+                <div class="glow-line" style="background: var(--cyan);"></div>
+                <div class="card-header">
+                    <svg width="24" height="24" fill="none" stroke="var(--cyan)" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H5.5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><path d="M20 8v6M23 11h-6"></path></svg>
+                    <div class="card-title">Primary Account Config</div>
+                </div>
+
+                <div class="status-block">
+                    <div>
+                        <div class="status-label">Current Guardian Status</div>
+                        <div class="status-val" id="guardianAddress" style="color: var(--text-sub);">None Assigned</div>
+                    </div>
+                </div>
+
+                <div class="input-group">
+                    <label>Assign Backup/Hardware Wallet (Guardian)</label>
+                    <input type="text" id="guardianInput" placeholder="Enter strictly STX Address (SP...)">
+                </div>
+
+                <button class="btn btn-cyan" onclick="setGuardian(this)">
+                    <svg width="18" height="18" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14"></path><path d="M12 5l7 7-7 7"></path></svg>
+                    Register Guardian On-Chain
+                </button>
+            </div>
+
+            <!-- Emergency Actions Panel -->
+            <div class="card">
+                <div class="glow-line" id="actionGlow" style="background: var(--emerald);"></div>
+                <div class="card-header">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    <div class="card-title">Emergency Controls</div>
+                </div>
+
+                <div class="status-block">
+                    <div>
+                        <div class="status-label">Autonomous Rebalancing</div>
+                        <div class="badge safe" id="lockBadge">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>
+                            ACTIVE & SECURE
+                        </div>
+                    </div>
+                </div>
+
+                <div style="background: rgba(244, 63, 94, 0.05); border: 1px solid rgba(244, 63, 94, 0.2); border-radius: 12px; padding: 1.5rem; margin-bottom: 1.5rem;">
+                    <h3 style="color: var(--rose); font-size: 1rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 8px;">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                        Guardian Actions Only
+                    </h3>
+                    <p style="color: rgba(255,255,255,0.7); font-size: 0.85rem; margin-bottom: 1rem; line-height: 1.5;">These actions can only be executed if the connected wallet matches the assigned Guardian address.</p>
+                    
+                    <button class="btn btn-danger" id="btnPause" onclick="toggleLock(this)">Pause Rebalancing (Lock)</button>
+                    <button class="btn btn-outline" style="color: var(--rose); border-color: rgba(244,63,94,0.3);" onclick="alert('Emergency recovery triggered: 450.00 USDC & 100 STX withdrawn to Guardian address.')">Emergency Fund Recovery</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isLocked = false;
+
+        function setGuardian(btn) {
+            const val = document.getElementById('guardianInput').value;
+            if(!val || !val.startsWith('SP')) {
+                alert('Please enter a valid Stacks (STX) address starting with SP.');
+                return;
+            }
+
+            const ogText = btn.innerHTML;
+            btn.innerHTML = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"></path></svg> Assigning...`;
+            btn.style.opacity = '0.7';
+
+            setTimeout(() => {
+                const formatted = val.substring(0,6) + '...' + val.substring(val.length-4);
+                document.getElementById('guardianAddress').innerText = formatted;
+                document.getElementById('guardianAddress').style.color = '#fff';
+                
+                btn.innerHTML = 'Guardian Assigned ✓';
+                btn.style.opacity = '1';
+                btn.style.background = 'var(--emerald)';
+                
+                setTimeout(() => {
+                    btn.innerHTML = ogText;
+                    btn.style.background = 'linear-gradient(135deg, #06b6d4, #0ea5e9)';
+                    document.getElementById('guardianInput').value = '';
+                }, 2000);
+            }, 1200);
+        }
+
+        function toggleLock(btn) {
+            const ogText = btn.innerText;
+            btn.innerText = 'Transacting...';
+            btn.style.opacity = '0.7';
+
+            setTimeout(() => {
+                isLocked = !isLocked;
+                const badge = document.getElementById('lockBadge');
+                const shield = document.getElementById('masterShield');
+                const glow = document.getElementById('actionGlow');
+                
+                if(isLocked) {
+                    badge.className = 'badge danger';
+                    badge.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg> LOCKED / PAUSED`;
+                    btn.innerText = 'Resume Normal Operations (Unlock)';
+                    btn.style.background = 'transparent';
+                    btn.style.border = '1px solid var(--emerald)';
+                    btn.style.color = 'var(--emerald)';
+                    
+                    shield.style.color = 'var(--rose)';
+                    shield.style.background = 'rgba(244, 63, 94, 0.1)';
+                    shield.style.borderColor = 'rgba(244, 63, 94, 0.3)';
+                    shield.style.boxShadow = '0 0 30px rgba(244, 63, 94, 0.2)';
+                    glow.style.background = 'var(--rose)';
+                } else {
+                    badge.className = 'badge safe';
+                    badge.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg> ACTIVE & SECURE`;
+                    btn.innerText = 'Pause Rebalancing (Lock)';
+                    btn.style.background = 'var(--gradient-danger)';
+                    btn.style.border = 'none';
+                    btn.style.color = 'white';
+
+                    shield.style.color = 'var(--emerald)';
+                    shield.style.background = 'rgba(16, 185, 129, 0.1)';
+                    shield.style.borderColor = 'rgba(16, 185, 129, 0.3)';
+                    shield.style.boxShadow = '0 0 30px rgba(16, 185, 129, 0.2)';
+                    glow.style.background = 'var(--emerald)';
+                }
+                btn.style.opacity = '1';
+                
+            }, 1000);
+        }
+    </script>
+</body>
+</html>

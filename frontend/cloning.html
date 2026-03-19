@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Cloning - Autonomous Rebalancer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+        :root {
+            --bg-base: #0f172a;
+            --bg-surface: #1e293b;
+            --primary: #6366f1;
+            --primary-glow: rgba(99, 102, 241, 0.4);
+            --accent-green: #34d399;
+            --accent-orange: #fbbf24;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-light: rgba(255, 255, 255, 0.08);
+            
+            --stx-color: #6366f1;
+            --btc-color: #f59e0b;
+            --usd-color: #10b981;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            background-image: 
+                radial-gradient(ellipse at top right, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at bottom left, rgba(52, 211, 153, 0.1) 0%, transparent 40%);
+        }
+
+        nav {
+            padding: 1.5rem 5%;
+            border-bottom: 1px solid var(--border-light);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand {
+            font-weight: 800;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand svg { color: var(--primary); }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 3rem 5%;
+        }
+
+        header {
+            margin-bottom: 3rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            background: linear-gradient(135deg, #fff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* Controls */
+        .controls {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            gap: 1rem;
+        }
+
+        .search {
+            flex-grow: 1;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .search input {
+            width: 100%;
+            background: rgba(30, 41, 59, 0.5);
+            border: 1px solid var(--border-light);
+            padding: 1rem 1rem 1rem 3rem;
+            border-radius: 16px;
+            color: #fff;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search input:focus {
+            border-color: var(--primary);
+        }
+
+        .search svg {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+        }
+
+        /* Clone Grid */
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(360px, 1fr));
+            gap: 2rem;
+        }
+
+        .card {
+            background: var(--bg-surface);
+            border: 1px solid var(--border-light);
+            border-radius: 24px;
+            padding: 2rem;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 4px;
+            background: linear-gradient(90deg, var(--primary), var(--accent-green));
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+
+        .card:hover::before { opacity: 1; }
+
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 2rem;
+        }
+
+        .profile {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .avatar {
+            width: 48px; height: 48px;
+            border-radius: 16px;
+            background: linear-gradient(135deg, rgba(99,102,241,0.2), rgba(52,211,153,0.2));
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 700;
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .wallet {
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        .tag {
+            font-size: 0.8rem;
+            color: var(--accent-green);
+            background: rgba(52, 211, 153, 0.1);
+            padding: 2px 8px;
+            border-radius: 6px;
+            font-weight: 600;
+        }
+
+        .badge-apy {
+            background: rgba(0,0,0,0.3);
+            padding: 8px 12px;
+            border-radius: 12px;
+            text-align: right;
+            border: 1px solid var(--border-light);
+        }
+
+        .badge-apy span { display: block; font-size: 0.75rem; color: var(--text-muted); }
+        .badge-apy strong { font-size: 1.1rem; color: var(--accent-green); }
+
+        /* Allocation Bar */
+        .allocation {
+            margin-bottom: 2rem;
+        }
+
+        .alloc-bar {
+            width: 100%;
+            height: 12px;
+            border-radius: 6px;
+            display: flex;
+            overflow: hidden;
+            margin-bottom: 1rem;
+        }
+
+        .segment-stx { background: var(--stx-color); }
+        .segment-btc { background: var(--btc-color); }
+        .segment-usd { background: var(--usd-color); }
+
+        .legend {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .legend-item { display: flex; align-items: center; gap: 6px; }
+        .dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* Actions */
+        .btn-clone {
+            width: 100%;
+            background: var(--primary);
+            color: #fff;
+            border: none;
+            padding: 1rem;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-clone:hover {
+            background: #4f46e5;
+            box-shadow: 0 10px 25px var(--primary-glow);
+        }
+
+        @media (max-width: 768px) {
+            h1 { font-size: 2.2rem; }
+            .controls { flex-direction: column; align-items: stretch; }
+            .search { max-width: 100%; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="brand">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path><polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline><line x1="12" y1="22.08" x2="12" y2="12"></line></svg>
+            AutoPortfolio
+        </div>
+        <div style="font-weight: 600; font-family: monospace; color: var(--text-muted);">SP28...G89Y</div>
+    </nav>
+
+    <div class="container">
+        <header>
+            <h1>One-Click Portfolio Cloning</h1>
+            <p class="subtitle">Discover top-performing traders and public wallets. Mirror their exact token distributions into your own smart contract portfolio instantly.</p>
+        </header>
+
+        <div class="controls">
+            <div class="search">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Search by Stacks Address (SP...)">
+            </div>
+            <div style="display: flex; gap: 1rem;">
+                <select style="background: rgba(30,41,59,0.5); border: 1px solid var(--border-light); color: white; padding: 1rem; border-radius: 12px; outline: none; cursor:pointer;">
+                    <option>Top APY</option>
+                    <option>Most Cloned</option>
+                    <option>Recent</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="grid">
+            
+            <!-- Card 1 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="profile">
+                        <div class="avatar">🐳</div>
+                        <div>
+                            <div class="wallet">SP3A...9K1Z</div>
+                            <div class="tag">Whale Activity</div>
+                        </div>
+                    </div>
+                    <div class="badge-apy">
+                        <span>All-Time</span>
+                        <strong>+142.5%</strong>
+                    </div>
+                </div>
+
+                <div class="allocation">
+                    <div class="alloc-bar">
+                        <div class="segment-stx" style="width: 50%;"></div>
+                        <div class="segment-btc" style="width: 30%;"></div>
+                        <div class="segment-usd" style="width: 20%;"></div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="dot segment-stx"></div> 50% STX</div>
+                        <div class="legend-item"><div class="dot segment-btc"></div> 30% sBTC</div>
+                        <div class="legend-item"><div class="dot segment-usd"></div> 20% xUSD</div>
+                    </div>
+                </div>
+
+                <button class="btn-clone" onclick="clonePortfolio(this, 'SP3A...9K1Z', [50, 30, 20])">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Clone to My Portfolio
+                </button>
+            </div>
+
+            <!-- Card 2 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="profile">
+                        <div class="avatar" style="background: linear-gradient(135deg, rgba(245,158,11,0.2), rgba(239,68,68,0.2));">🔥</div>
+                        <div>
+                            <div class="wallet">SP1X...QW8E</div>
+                            <div class="tag" style="color: var(--accent-orange); background: rgba(251, 191, 36, 0.1);">Aggressive</div>
+                        </div>
+                    </div>
+                    <div class="badge-apy">
+                        <span>All-Time</span>
+                        <strong>+210.4%</strong>
+                    </div>
+                </div>
+
+                <div class="allocation">
+                    <div class="alloc-bar">
+                        <div class="segment-stx" style="width: 80%;"></div>
+                        <div class="segment-btc" style="width: 15%;"></div>
+                        <div class="segment-usd" style="width: 5%;"></div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="dot segment-stx"></div> 80% STX</div>
+                        <div class="legend-item"><div class="dot segment-btc"></div> 15% sBTC</div>
+                        <div class="legend-item"><div class="dot segment-usd"></div> 5% xUSD</div>
+                    </div>
+                </div>
+
+                <button class="btn-clone" onclick="clonePortfolio(this, 'SP1X...QW8E', [80, 15, 5])">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Clone to My Portfolio
+                </button>
+            </div>
+
+            <!-- Card 3 -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="profile">
+                        <div class="avatar" style="background: linear-gradient(135deg, rgba(16,185,129,0.2), rgba(59,130,246,0.2));">🛡️</div>
+                        <div>
+                            <div class="wallet">SP5Y...RT2Q</div>
+                            <div class="tag" style="color: var(--text-main); background: rgba(255, 255, 255, 0.1);">Conservative</div>
+                        </div>
+                    </div>
+                    <div class="badge-apy">
+                        <span>All-Time</span>
+                        <strong style="color: var(--text-main);">+12.1%</strong>
+                    </div>
+                </div>
+
+                <div class="allocation">
+                    <div class="alloc-bar">
+                        <div class="segment-stx" style="width: 20%;"></div>
+                        <div class="segment-btc" style="width: 10%;"></div>
+                        <div class="segment-usd" style="width: 70%;"></div>
+                    </div>
+                    <div class="legend">
+                        <div class="legend-item"><div class="dot segment-stx"></div> 20% STX</div>
+                        <div class="legend-item"><div class="dot segment-btc"></div> 10% sBTC</div>
+                        <div class="legend-item"><div class="dot segment-usd"></div> 70% xUSD</div>
+                    </div>
+                </div>
+
+                <button class="btn-clone" onclick="clonePortfolio(this, 'SP5Y...RT2Q', [20, 10, 70])">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Clone to My Portfolio
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+        function clonePortfolio(btn, targetAddress, weights) {
+            const ogContent = btn.innerHTML;
+            
+            btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="animation: spin 1s linear infinite"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Syncing Contract...`;
+            btn.style.opacity = '0.7';
+            btn.style.pointerEvents = 'none';
+
+            // Simulate Stacks TX delay
+            setTimeout(() => {
+                btn.innerHTML = `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Successfully Cloned`;
+                btn.style.background = 'var(--accent-green)';
+                btn.style.color = '#fff';
+                btn.style.opacity = '1';
+
+                // Display Toast Alert
+                const alert = document.createElement('div');
+                alert.style.position = 'fixed';
+                alert.style.bottom = '30px';
+                alert.style.right = '30px';
+                alert.style.background = 'rgba(15, 23, 42, 0.9)';
+                alert.style.border = '1px solid var(--accent-green)';
+                alert.style.color = '#fff';
+                alert.style.padding = '1.25rem 2rem';
+                alert.style.borderRadius = '16px';
+                alert.style.boxShadow = '0 10px 30px rgba(52, 211, 153, 0.2)';
+                alert.style.backdropFilter = 'blur(10px)';
+                alert.style.zIndex = '1000';
+                alert.style.fontFamily = "'Plus Jakarta Sans', sans-serif";
+                
+                alert.innerHTML = `
+                    <div style="font-weight: 700; margin-bottom: 4px; display: flex; align-items: center; gap: 8px;">
+                        <span style="color: var(--accent-green);">●</span> Portfolio Updated
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 0.9rem;">
+                        Allocations set to ${weights[0]}% STX, ${weights[1]}% sBTC, ${weights[2]}% Stable
+                    </div>
+                `;
+                
+                document.body.appendChild(alert);
+
+                setTimeout(() => {
+                    alert.style.opacity = '0';
+                    alert.style.transition = 'opacity 0.5s';
+                    setTimeout(() => alert.remove(), 500);
+                    
+                    // Reset Button
+                    btn.innerHTML = ogContent;
+                    btn.style.background = 'var(--primary)';
+                    btn.style.pointerEvents = 'auto';
+                }, 4000);
+
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

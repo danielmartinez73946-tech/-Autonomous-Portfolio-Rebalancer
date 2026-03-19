@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Asset Whitelist - Autonomous Portfolio Rebalancer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+        :root {
+            --bg-primary: #0a0f1c;
+            --bg-secondary: #172136;
+            --accent-orange: #f59e0b;
+            --accent-red: #ef4444;
+            --accent-green: #10b981;
+            --gradient-start: #f59e0b;
+            --gradient-end: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-primary);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Glow */
+        .bg-glow {
+            position: absolute;
+            width: 700px;
+            height: 700px;
+            background: radial-gradient(circle, rgba(245, 158, 11, 0.15) 0%, rgba(10,15,28,0) 70%);
+            top: -200px;
+            right: -200px;
+            z-index: 0;
+            pointer-events: none;
+            filter: blur(60px);
+        }
+
+        nav {
+            width: 100%;
+            max-width: 1200px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 0 3rem 0;
+            z-index: 10;
+        }
+
+        h1.logo {
+            font-size: 1.5rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #fff, #cbd5e1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+
+        .wallet-btn {
+            background: linear-gradient(135deg, var(--gradient-start), var(--gradient-end));
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 999px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.3);
+        }
+
+        .wallet-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(245, 158, 11, 0.5);
+        }
+
+        main {
+            width: 100%;
+            max-width: 1000px;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 2rem;
+        }
+
+        .header-section {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 1.5rem;
+            margin-bottom: 1rem;
+        }
+
+        .title-group h2 {
+            font-size: 2.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(135deg, #fff, #fcd34d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .title-group p {
+            color: var(--text-muted);
+            font-size: 1.1rem;
+        }
+
+        .glass-panel {
+            background: rgba(23, 33, 54, 0.6);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 2rem;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+        }
+
+        /* Asset Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        th {
+            text-align: left;
+            padding: 1rem;
+            color: var(--text-muted);
+            font-weight: 500;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        td {
+            padding: 1.5rem 1rem;
+            border-bottom: 1px solid rgba(255,255,255,0.05);
+            vertical-align: middle;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        tr {
+            transition: background 0.2s ease;
+        }
+
+        tr:hover {
+            background: rgba(255,255,255,0.02);
+        }
+
+        .asset-name {
+            font-weight: 600;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .asset-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #334155, #1e293b);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            border: 1px solid var(--border-color);
+        }
+
+        .asset-address {
+            font-family: monospace;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            background: rgba(0,0,0,0.2);
+            padding: 4px 8px;
+            border-radius: 6px;
+        }
+
+        .status-badge {
+            padding: 0.35rem 0.8rem;
+            border-radius: 999px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--accent-green);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .status-suspended {
+            background: rgba(239, 68, 68, 0.15);
+            color: var(--accent-red);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+
+        .status-active .status-dot { background: var(--accent-green); box-shadow: 0 0 8px var(--accent-green); }
+        .status-suspended .status-dot { background: var(--accent-red); box-shadow: 0 0 8px var(--accent-red); }
+
+        .action-btns {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        button.toggle-btn {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: #fff;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 500;
+        }
+
+        button.toggle-btn:hover {
+            background: rgba(255,255,255,0.1);
+        }
+
+        button.toggle-btn.suspend:hover {
+            background: rgba(239, 68, 68, 0.2);
+            border-color: var(--accent-red);
+            color: var(--accent-red);
+        }
+
+        button.toggle-btn.activate:hover {
+            background: rgba(16, 185, 129, 0.2);
+            border-color: var(--accent-green);
+            color: var(--accent-green);
+        }
+
+        /* Add Asset Form */
+        .add-asset-form {
+            display: flex;
+            gap: 1rem;
+            margin-top: 1rem;
+            background: rgba(0,0,0,0.2);
+            padding: 1.5rem;
+            border-radius: 16px;
+            border: 1px dashed rgba(255,255,255,0.2);
+        }
+
+        .add-asset-form input {
+            flex: 1;
+            background: var(--bg-primary);
+            border: 1px solid var(--border-color);
+            color: white;
+            padding: 0.8rem 1rem;
+            border-radius: 10px;
+            font-size: 1rem;
+            outline: none;
+        }
+
+        .add-asset-form input:focus {
+            border-color: var(--accent-orange);
+            box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.2);
+        }
+
+        .btn-add {
+            background: var(--text-main);
+            color: var(--bg-primary);
+            border: none;
+            padding: 0 2rem;
+            border-radius: 10px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-add:hover {
+            background: var(--accent-orange);
+            color: white;
+            box-shadow: 0 0 15px rgba(245, 158, 11, 0.4);
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-glow"></div>
+
+    <nav>
+        <h1 class="logo">AutoPortfolio REBALANCER</h1>
+        <button class="wallet-btn" id="connectWalletBtn">Connect Admin Wallet</button>
+    </nav>
+
+    <main>
+        <div class="header-section">
+            <div class="title-group">
+                <h2>Asset Registry</h2>
+                <p>Manage the decentralized whitelist of approved portfolio tokens.</p>
+            </div>
+        </div>
+
+        <div class="glass-panel">
+            <h3 style="margin-bottom: 1rem; font-weight: 500; display: flex; align-items: center; gap: 8px;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--accent-orange)" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+                Protocol Verified Assets
+            </h3>
+            
+            <table>
+                <thead>
+                    <tr>
+                        <th>Asset Name</th>
+                        <th>Contract Address</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="assetTableBody">
+                    <!-- Pre-approved standard assets -->
+                    <tr>
+                        <td class="asset-name"><div class="asset-icon">STX</div> Stacks Token</td>
+                        <td class="asset-address">Protocol Native (ID: 1)</td>
+                        <td><div class="status-badge status-active"><div class="status-dot"></div> Whitelisted</div></td>
+                        <td class="action-btns">
+                            <button class="toggle-btn suspend" onclick="toggleStatus(this, 'suspend')">Suspend</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="asset-name"><div class="asset-icon">BTC</div> sBTC</td>
+                        <td class="asset-address">Protocol Native (ID: 2)</td>
+                        <td><div class="status-badge status-active"><div class="status-dot"></div> Whitelisted</div></td>
+                        <td class="action-btns">
+                            <button class="toggle-btn suspend" onclick="toggleStatus(this, 'suspend')">Suspend</button>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td class="asset-name"><div class="asset-icon" style="background:#0f766e;">wIA</div> Wrapped xUSD</td>
+                        <td class="asset-address">SP2C...89X</td>
+                        <td><div class="status-badge status-suspended"><div class="status-dot"></div> Suspended</div></td>
+                        <td class="action-btns">
+                            <button class="toggle-btn activate" onclick="toggleStatus(this, 'activate')">Reactivate</button>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+
+            <h3 style="margin-top: 3rem; margin-bottom: 0.5rem; font-weight: 500;">Add Custom Asset</h3>
+            <p style="color: var(--text-muted); font-size: 0.9rem;">Adding an asset contract allows strategies to route trades for this token.</p>
+            
+            <div class="add-asset-form">
+                <input type="text" id="assetName" placeholder="Asset Ticker / Name (e.g. ALEX)">
+                <input type="text" id="assetAddress" placeholder="Smart Contract Address (SP...)">
+                <button class="btn-add" onclick="addAsset()">Add to Registry</button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // UI Mock Interaction for Admin features
+        function toggleStatus(btn, action) {
+            const row = btn.closest('tr');
+            const badge = row.querySelector('.status-badge');
+            
+            if (action === 'suspend') {
+                btn.innerText = 'Suspending...';
+                setTimeout(() => {
+                    badge.className = 'status-badge status-suspended';
+                    badge.innerHTML = '<div class="status-dot"></div> Suspended';
+                    btn.className = 'toggle-btn activate';
+                    btn.innerText = 'Reactivate';
+                    btn.setAttribute('onclick', "toggleStatus(this, 'activate')");
+                }, 1000);
+            } else {
+                btn.innerText = 'Reactivating...';
+                setTimeout(() => {
+                    badge.className = 'status-badge status-active';
+                    badge.innerHTML = '<div class="status-dot"></div> Whitelisted';
+                    btn.className = 'toggle-btn suspend';
+                    btn.innerText = 'Suspend';
+                    btn.setAttribute('onclick', "toggleStatus(this, 'suspend')");
+                }, 1000);
+            }
+        }
+
+        function addAsset() {
+            const name = document.getElementById('assetName').value;
+            const address = document.getElementById('assetAddress').value;
+
+            if(!name || !address.startsWith('SP')) {
+                alert('Please provide a valid token name and STX contract address.');
+                return;
+            }
+
+            const btn = event.target;
+            const ogText = btn.innerText;
+            btn.innerText = 'Registering on-chain...';
+            btn.style.opacity = '0.7';
+
+            setTimeout(() => {
+                const tbody = document.getElementById('assetTableBody');
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="asset-name"><div class="asset-icon" style="background:#4338ca;">${name.substring(0,3).toUpperCase()}</div> ${name}</td>
+                    <td class="asset-address">${address.substring(0,6)}...${address.substring(address.length-4)}</td>
+                    <td><div class="status-badge status-active"><div class="status-dot"></div> Whitelisted</div></td>
+                    <td class="action-btns">
+                        <button class="toggle-btn suspend" onclick="toggleStatus(this, 'suspend')">Suspend</button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+
+                document.getElementById('assetName').value = '';
+                document.getElementById('assetAddress').value = '';
+                btn.innerText = ogText;
+                btn.style.opacity = '1';
+                
+            }, 1500);
+        }
+    </script>
+</body>
+</html>

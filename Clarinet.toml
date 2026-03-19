@@ -21,8 +21,38 @@ path = 'contracts/emergency-pause.clar'
 clarity_version = 3
 epoch = 'latest'
 
+[contracts.deposit-limits]
+path = 'contracts/deposit-limits.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.performance-tracker]
+path = 'contracts/performance-tracker.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.portfolio-lock]
+path = 'contracts/portfolio-lock.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.protocol-analytics]
+path = 'contracts/protocol-analytics.clar'
+clarity_version = 3
+epoch = 'latest'
+
 [contracts.auto-portfolio-rebalancer]
 path = 'contracts/auto-portfolio-rebalancer.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.strategy-registry]
+path = 'contracts/strategy-registry.clar'
+clarity_version = 3
+epoch = 'latest'
+
+[contracts.referral-rewards]
+path = 'contracts/referral-rewards.clar'
 clarity_version = 3
 epoch = 'latest'
 
@@ -33,7 +63,7 @@ passes = ['check_checker']
 strict = false
 trusted_sender = false
 trusted_caller = false
-callee_filter = false
+callee_filter = true
 
 [repl.remote_data]
 enabled = false

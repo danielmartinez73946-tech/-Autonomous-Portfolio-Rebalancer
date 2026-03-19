@@ -10,6 +10,7 @@
 (define-constant err-drift-not-exceeded (err u108))
 (define-constant err-stop-loss-not-met (err u109))
 (define-constant err-no-stop-loss (err u110))
+(define-constant err-invalid-interval (err u111))
 
 (define-constant blocks-per-quarter u4320)
 (define-constant min-rebalance-interval u144)
@@ -56,6 +57,11 @@
 )
 
 (define-map stop-loss-thresholds
+    principal
+    uint
+)
+
+(define-map rebalance-intervals
     principal
     uint
 )
@@ -309,7 +315,7 @@
         )
         (var-set rebalance-count (+ (var-get rebalance-count) u1))
         (ok true)
-    ))
+    )
 )
 
 (define-read-only (get-contract-stx-balance)
@@ -440,17 +446,6 @@
             })
         )
         (var-set rebalance-count (+ (var-get rebalance-count) u1))
-        (ok true)
-    ))
-)
-
-(define-read-only (get-stop-loss-threshold (user principal))
-    (ok (map-get? stop-loss-thresholds user))
-)
-
-(define-public (set-stop-loss-level (threshold uint))
-    (let ((portfolio (unwrap! (map-get? portfolios tx-sender) err-no-portfolio)))
-        (map-set stop-loss-thresholds tx-sender threshold)
         (ok true)
     )
 )
